@@ -10,7 +10,9 @@ import asyncio
 from typing import Callable, Any
 from typing_extensions import Self
 from types import TracebackType
-from flask import Response
+import json
+
+from quart import Response
 
 from mcp_personal.web_api.api import BaseWebAPI
 from mcp_personal.clients.mcp import MCPClient
@@ -55,8 +57,8 @@ class AsyncWebAPI(BaseWebAPI):
         :param exc_value: The value of the exception raised, if any.
         :param traceback: The traceback of the exception raised, if any.
         """
-        super().__exit__(exc_type, exc_value, traceback)
         await self._mcp_client.__aexit__(exc_type, exc_value, traceback)
+        super().__exit__(exc_type, exc_value, traceback)
 
     @property
     def _endpoint_handlers(
@@ -71,11 +73,12 @@ class AsyncWebAPI(BaseWebAPI):
         """
         return {
             "homepage": (["GET"], "/", self._create_homepage),
+            "invoke": (["POST"], "/invoke", self._invoke),
         }
 
-    def _create_homepage(self, params: dict[str, Any]) -> Response:
+    async def _create_homepage(self, params: dict[str, Any]) -> Response:
         """
-        Handler for creating the Async Flask API homepage. This is a GET
+        Handler for creating the Async Quart API homepage. This is a GET
         request, which does not require any data to be passed in the request
         and simply returns a welcome message.
 
@@ -86,8 +89,42 @@ class AsyncWebAPI(BaseWebAPI):
         """
         _ = params
         return Response(
-            "<h1> Hello, welcome to the Async Flask API homepage! </h1>", 200
+            "<h1> Hello, welcome to the Async Quart API homepage! </h1>", 200
         )
+
+    async def _invoke(self, data: str, params: dict[str, Any]) -> Response:
+        """
+        Handler for invoking the MCP client with a query. This is a POST
+        request, which requires a query to be passed in the request data and
+        returns the response from the MCP client.
+
+        :param data: The request data.
+        :type data: dict[str, Any]
+        :param params: The request parameters.
+        :type params: dict[str, Any]
+        :return: The response.
+        :rtype: Response
+        """
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            return Response("Invalid JSON data", 400)
+
+        try:
+            query = data_dict["query"]
+        except KeyError:
+            return Response("Query is required", 400)
+
+        try:
+            session_id = data_dict["session_id"]
+        except KeyError:
+            return Response("Session ID is required", 400)
+
+        messages = await self._mcp_client.invoke(
+            query=query, session_id=session_id
+        )
+        print(messages)
+        return Response("woooo", 200)
 
 
 async def _start_async_api() -> None:
@@ -96,7 +133,7 @@ async def _start_async_api() -> None:
     instance of the AsyncWebAPI and run it.
     """
     async with AsyncWebAPI() as app:
-        app.run()
+        await app.run()
 
 
 def start_async_api() -> None:

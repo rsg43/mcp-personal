@@ -4,8 +4,8 @@ from contextlib import AsyncExitStack
 from asyncio import run
 from uuid import uuid4
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 from langchain_core.messages import (
     SystemMessage,
     HumanMessage,
@@ -17,23 +17,14 @@ from mcp.types import TextContent
 from mcp_personal.clients.chat_history import ChatHistory
 from mcp_personal.clients.model.anthropic import AnthropicModel
 
-DEFAULT_CONTEXT = """
-"""
-
-
 SYSTEM_PROMPT_TEMPLATE = (
     "You are a helpful assistant. Try to answer questions concisely and "
     "accuretely. You are also able to call tools to help you answer questions"
-    ". Only use tools if the question requires it. Answer the questions based"
-    "on the conversation history and the context below:\n\n"
-    "<context>{context}</context>\n\n"
+    ". Only use tools if the question requires it. "
 )
 
 SERVERS = {
-    "maths": StdioServerParameters(
-        command="uv",
-        args=["run", "tbi_assessment/mcp/servers/maths.py"],
-    )
+    "maths": "http://localhost:54321/sse",
 }
 
 
@@ -45,7 +36,7 @@ class MCPClient:
         self.exit_stack = AsyncExitStack()
         self.tool_sessions: dict[str, ClientSession] = {}
         self._model = AnthropicModel()
-        self._system_prompt: str
+        self._system_prompt = SYSTEM_PROMPT_TEMPLATE
 
     async def __aenter__(self):
         await self.connect_to_servers()
@@ -62,12 +53,13 @@ class MCPClient:
     async def connect_to_servers(self) -> None:
         all_tools: list[dict[str, Any]] = []
         for _, server_params in SERVERS.items():
-            stdio_transport = await self.exit_stack.enter_async_context(
-                stdio_client(server_params)
+            sse_transport = await self.exit_stack.enter_async_context(
+                sse_client(server_params)
             )
             session = await self.exit_stack.enter_async_context(
-                ClientSession(*stdio_transport)
+                ClientSession(*sse_transport)
             )
+
             await session.initialize()
             self.sessions.append(session)
 
@@ -104,6 +96,8 @@ class MCPClient:
                 result = await self.tool_sessions[tool_call["name"]].call_tool(
                     name=tool_call["name"], arguments=tool_call["args"]
                 )
+                print(f"Tool call completed: {tool_call['name']}")
+
                 print_result = (
                     val.text
                     if isinstance(val := result.content[0], TextContent)
@@ -114,6 +108,7 @@ class MCPClient:
                 new_messages.append(
                     ToolMessage(
                         content=result.content,
+                        artifact=tool_call,
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
@@ -133,15 +128,6 @@ class MCPClient:
 
     async def run(self) -> None:
         print("\nMCP Client Running! (enter q to quit)")
-
-        print("Please enter the context you want to query against. ")
-        context = input("Context: ").strip()
-        if not context:
-            print("using default context")
-            context = DEFAULT_CONTEXT
-            print(context)
-
-        self._system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
         session_id = uuid4().hex
         while True:
             try:

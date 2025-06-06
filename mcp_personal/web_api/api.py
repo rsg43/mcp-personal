@@ -69,7 +69,7 @@ class BaseWebAPI(ABC):
         :type exc_tb: Union[TracebackType, None]
         """
 
-    def run(self) -> None:
+    async def run(self) -> None:
         """
         Run the web API. This method adds the endpoint handlers to the web app
         and starts the server.
@@ -86,4 +86,4 @@ class BaseWebAPI(ABC):
                 methods,
             )
 
-        self._app.run()
+        await self._app.run()

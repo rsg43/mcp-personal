@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("Math")
+mcp = FastMCP(name="Math", host="0.0.0.0", port=54321)
 
 
 @mcp.tool()
@@ -37,4 +37,4 @@ def greater(a: float, b: float) -> bool:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    mcp.run(transport="sse")

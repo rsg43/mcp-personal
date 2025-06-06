@@ -1,16 +1,16 @@
 """
-Module for the Flask web app. This module contains the class for the production
-web app, which uses Flask to create a web application that is used by the Web
+Module for the Quart web app. This module contains the class for the production
+web app, which uses Quart to create a web application that is used by the Web
 API to enable communication.
 """
 
-from asyncio.coroutines import iscoroutinefunction
 from dataclasses import dataclass
 from typing import Callable, Any, Awaitable
 
-from flask import Flask, request
-from flask_cors import CORS
-from waitress import serve
+from quart import Quart, request
+from quart_cors import cors
+from hypercorn.asyncio import serve
+from hypercorn.config import Config as HypercornConfig
 
 
 @dataclass
@@ -37,7 +37,7 @@ class WebAppConfig:
 
 class WebApp:
     """
-    Class for production web app. This class uses Flask to create a web
+    Class for production web app. This class uses Quart to create a web
     application, along with registering endpoints and serving the app on the
     specified host and port.
 
@@ -46,20 +46,19 @@ class WebApp:
     """
 
     def __init__(self, config: WebAppConfig) -> None:
-        self._app = Flask(__name__)
-        self._cors = CORS(self._app)
+        self._app = cors(Quart(__name__))
         self._config = config
 
-    def run(self) -> None:
+    async def run(self) -> None:
         """
         Method to run the web app. This will start the web app and listen for
         incoming requests.
         """
-        serve(
-            self._app,
-            host=self._config.host,
-            port=self._config.port,
-            threads=self._config.threads,
+        config = HypercornConfig()
+        config.bind = [f"{self._config.host}:{self._config.port}"]
+        await serve(
+            app=self._app,
+            config=config,
         )
 
     def add_endpoint(
@@ -92,9 +91,9 @@ class WebApp:
 
     def _wrap_handler(
         self,
-        handler: Callable[..., Any] | Callable[..., Awaitable[Any]],
+        handler: Callable[..., Awaitable[Any]],
         methods: list[str],
-    ) -> Callable[..., Any] | Callable[..., Awaitable[Any]]:
+    ) -> Callable[..., Awaitable[Any]]:
         """
         Wraps the handler function to accept the request data and arguments as
         parameters. This allows us to use special properties of requests, such
@@ -102,47 +101,25 @@ class WebApp:
         for different endpoint methods.
 
         :param handler: The handler function to wrap.
-        :type handler: Callable[..., Any]
+        :type handler: Callable[..., Awaitable[Any]]
         :param methods: The HTTP methods that the handler accepts.
         :type methods: list[str]
         :raises ValueError: If the method is not supported.
         :return: The wrapped handler function.
-        :rtype: Callable[..., Any]
+        :rtype: Callable[..., Awaitable[Any]]
         """
         (method,) = methods
-        if iscoroutinefunction(handler):
-            if method == "GET":
-
-                async def _async_handler(*args: Any, **kwargs: Any) -> Any:
-                    return await handler(
-                        request.args.to_dict(), *args, **kwargs
-                    )
-
-            elif method in ["POST", "PATCH", "PUT"]:
-
-                async def _async_handler(*args: Any, **kwargs: Any) -> Any:
-                    return await handler(
-                        request.data.decode(),
-                        request.args.to_dict(),
-                        *args,
-                        **kwargs,
-                    )
-
-            else:
-                raise ValueError(f"Unsupported method: {method}")
-
-            return _async_handler
-
         if method == "GET":
 
-            def _handler(*args: Any, **kwargs: Any) -> Any:
-                return handler(request.args.to_dict(), *args, **kwargs)
+            async def _handler(*args: Any, **kwargs: Any) -> Any:
+                return await handler(request.args.to_dict(), *args, **kwargs)
 
         elif method in ["POST", "PATCH", "PUT"]:
 
-            def _handler(*args: Any, **kwargs: Any) -> Any:
-                return handler(
-                    request.data.decode(),
+            async def _handler(*args: Any, **kwargs: Any) -> Any:
+                data = await request.data
+                return await handler(
+                    data.decode(),
                     request.args.to_dict(),
                     *args,
                     **kwargs,
