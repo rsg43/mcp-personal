@@ -14,7 +14,7 @@ license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
 requires-python = "~=3.12"
 dependencies = [
-  "requests==2.31.0",
+  "requests==2.32.2",
   "langchain==0.3.25",
   "langchain-community==0.3.24",
   "langchain-anthropic==0.3.13",
