@@ -1,0 +1,34 @@
+{
+    "name": "Chat ConvFinQA",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "black-formatter.args": [
+                    "--preview",
+                    "--line-length",
+                    "79"
+                ],
+                "[python]": {
+                    "editor.rulers": [
+                        {
+                            "column": 79
+                        }
+                    ],
+                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.formatOnSave": true
+                }
+            },
+            "extensions": [
+                "ms-python.black-formatter",
+                "ms-python.vscode-pylance",
+                "ms-python.python",
+				"GitHub.copilot-chat",
+				"GitHub.copilot"
+            ]
+        }
+    }
+}
