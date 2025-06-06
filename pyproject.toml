@@ -10,7 +10,7 @@ authors = [
   {name = "Ravinda Gunaratne", email = "ravindag@hotmail.com"},
 ]
 readme = "README.md"
-license = "GNU General Public License v3 (GPLv3)"
+license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
 requires-python = "~=3.12"
 dependencies = [
