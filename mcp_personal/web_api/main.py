@@ -123,8 +123,11 @@ class AsyncWebAPI(BaseWebAPI):
         messages = await self._mcp_client.invoke(
             query=query, session_id=session_id
         )
-        print(messages)
-        return Response("woooo", 200)
+        response = {
+            "messages": [message.to_json() for message in messages],
+            "session_id": session_id,
+        }
+        return Response(json.dumps(response), 200)
 
 
 async def _start_async_api() -> None:

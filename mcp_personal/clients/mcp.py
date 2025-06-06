@@ -21,6 +21,7 @@ SYSTEM_PROMPT_TEMPLATE = (
     "You are a helpful assistant. Try to answer questions concisely and "
     "accuretely. You are also able to call tools to help you answer questions"
     ". Only use tools if the question requires it. "
+    "Here are the tools you can use: \n\n{tools}\n\n"
 )
 
 SERVERS = {
@@ -37,6 +38,7 @@ class MCPClient:
         self.tool_sessions: dict[str, ClientSession] = {}
         self._model = AnthropicModel()
         self._system_prompt = SYSTEM_PROMPT_TEMPLATE
+        self._all_tools: list[dict[str, Any]] = []
 
     async def __aenter__(self):
         await self.connect_to_servers()
@@ -51,7 +53,6 @@ class MCPClient:
         await self.close()
 
     async def connect_to_servers(self) -> None:
-        all_tools: list[dict[str, Any]] = []
         for _, server_params in SERVERS.items():
             sse_transport = await self.exit_stack.enter_async_context(
                 sse_client(server_params)
@@ -68,7 +69,7 @@ class MCPClient:
 
             for tool in tools:
                 self.tool_sessions[tool.name] = session
-                all_tools.append(
+                self._all_tools.append(
                     {
                         "name": tool.name,
                         "description": tool.description,
@@ -76,11 +77,13 @@ class MCPClient:
                     }
                 )
 
-        self._model.bind_tools(all_tools)
+        self._model.bind_tools(self._all_tools)
 
     async def invoke(self, query: str, session_id: str) -> list[BaseMessage]:
         messages = [
-            SystemMessage(content=self._system_prompt)
+            SystemMessage(
+                content=self._system_prompt.format(tools=self._all_tools)
+            )
         ] + self.chat_history.get_messages(session_id)
         query_message = HumanMessage(content=query)
         new_messages: list[BaseMessage] = []
@@ -108,7 +111,14 @@ class MCPClient:
                 new_messages.append(
                     ToolMessage(
                         content=result.content,
-                        artifact=tool_call,
+                        artifact={
+                            "call": tool_call,
+                            "result": (
+                                result.content[0].text
+                                if isinstance(result.content[0], TextContent)
+                                else result.content[0]
+                            ),
+                        },
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
