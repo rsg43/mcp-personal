@@ -13,7 +13,7 @@ from types import TracebackType
 from flask import Response
 
 from mcp_personal.web_api.api import BaseWebAPI
-from mcp_personal.mcp.client.main import MCPClient
+from mcp_personal.clients.mcp import MCPClient
 
 
 class AsyncWebAPI(BaseWebAPI):

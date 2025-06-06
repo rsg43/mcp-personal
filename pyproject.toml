@@ -20,6 +20,9 @@ dependencies = [
   "langchain-anthropic==0.3.13",
   "mcp==1.9.0",
   "uv==0.7.6",
+  "flask[async]==3.1.0",
+  "flask-cors==5.0.1",
+  "waitress==3.0.2"
 ]
 
 [project.optional-dependencies]
@@ -33,5 +36,6 @@ testing = [
     "semgrep==1.103.0",
     "pytest==8.3.5",
     "types-requests==2.32.0.20250301",
-    "types-waitress==3.0.1.20241117"
+    "types-waitress==3.0.1.20241117",
+    "types-Flask-Cors==5.0.0.20250413"
 ]
