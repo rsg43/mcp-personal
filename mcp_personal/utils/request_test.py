@@ -1,8 +1,15 @@
+"""
+Test script to send a request to the API and print the response.
+"""
+
 from uuid import uuid4
 import requests
 
 
 def main() -> None:
+    """
+    Main function to send a request to the API and print the response.
+    """
     url = "http://localhost:12345/invoke"
     data = {
         "query": "What is 3 time 6 divided by 234234",

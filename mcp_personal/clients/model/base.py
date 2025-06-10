@@ -1,3 +1,8 @@
+"""
+Module for the BaseModel class, which provides a unified interface
+for interacting with various language models.
+"""
+
 from typing import Any, Optional
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
@@ -7,6 +12,10 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 
 class BaseModel:
+    """
+    Base class for interacting with a language model. Provides methods to
+    chat with the model and invoke it with a prompt. Can also bind tools to
+    the model for enhanced functionality."""
 
     _model: BaseChatModel
     _tools_bound: bool = False
@@ -23,9 +32,13 @@ class BaseModel:
         :rtype: AIMessage
         """
         if self._tools_bound and self._tool_model:
-            return self._tool_model.invoke(input=messages)
+            result = self._tool_model.invoke(input=messages)
+        else:
+            result = self._model.invoke(input=messages)
 
-        return self._model.invoke(input=messages)
+        if not isinstance(result, AIMessage):
+            raise TypeError(f"Expected AIMessage, got {type(result).__name__}")
+        return result
 
     def invoke(self, prompt: str) -> str:
         """

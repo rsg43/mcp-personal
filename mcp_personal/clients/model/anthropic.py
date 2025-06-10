@@ -1,3 +1,7 @@
+"""
+Module for interacting with the Anthropic API.
+"""
+
 from os import environ
 
 from langchain_anthropic.chat_models import ChatAnthropic
@@ -6,6 +10,9 @@ from mcp_personal.clients.model.base import BaseModel
 
 
 class AnthropicModel(BaseModel):
+    """
+    Model class for interacting with the Anthropic API.
+    """
 
     def __init__(self) -> None:
         self._model = ChatAnthropic(

@@ -8,10 +8,10 @@ service.
 
 import asyncio
 from typing import Callable, Any
-from typing_extensions import Self
 from types import TracebackType
 import json
 
+from typing_extensions import Self
 from quart import Response
 
 from mcp_personal.web_api.api import BaseWebAPI
@@ -105,6 +105,7 @@ class AsyncWebAPI(BaseWebAPI):
         :return: The response.
         :rtype: Response
         """
+        _ = params
         try:
             data_dict = json.loads(data)
         except json.JSONDecodeError:

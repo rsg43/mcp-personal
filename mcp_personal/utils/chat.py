@@ -1,3 +1,7 @@
+"""
+Module to interact with the MCP Personal API for chat functionality.
+"""
+
 from uuid import uuid4
 import json
 
@@ -5,6 +9,12 @@ import requests
 
 
 def main() -> None:
+    """
+    Main function to start the request loop for interacting with the MCP
+    Personal API. This function prompts the user for input, sends the query to
+    the API, and processes the response to display messages from the AI or
+    tools called by the AI.
+    """
     url = "http://localhost:12345/invoke"
     session_id = uuid4().hex
     print("Starting request loop. Enter q or press Ctrl + C to stop.")

@@ -1,5 +1,5 @@
 {
-    "name": "Chat ConvFinQA",
+    "name": "MCP Personal",
     "build": {
         "dockerfile": "Dockerfile",
         "context": ".."

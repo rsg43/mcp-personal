@@ -1,18 +1,21 @@
+"""
+Module for MCP client that interacts with MCP servers.
+"""
+
 from typing import Any
 from types import TracebackType
 from contextlib import AsyncExitStack
-from asyncio import run
-from uuid import uuid4
 
+from typing_extensions import Self
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+from mcp.types import TextContent
 from langchain_core.messages import (
     SystemMessage,
     HumanMessage,
     BaseMessage,
     ToolMessage,
 )
-from mcp.types import TextContent
 
 from mcp_personal.clients.chat_history import ChatHistory
 from mcp_personal.clients.model.anthropic import AnthropicModel
@@ -30,6 +33,11 @@ SERVERS = {
 
 
 class MCPClient:
+    """
+    MCPClient is an asynchronous client for interacting with the MCP servers.
+    It manages sessions, handles tool calls, and processes queries through a
+    model. It also maintains a chat history for each session.
+    """
 
     def __init__(self) -> None:
         self.chat_history = ChatHistory()
@@ -40,7 +48,13 @@ class MCPClient:
         self._system_prompt = SYSTEM_PROMPT_TEMPLATE
         self._all_tools: list[dict[str, Any]] = []
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
+        """
+        Asynchronous context manager entry method to initialize the MCP client.
+
+        :return: The initialized MCPClient instance.
+        :rtype: Self
+        """
         await self.connect_to_servers()
         return self
 
@@ -50,9 +64,24 @@ class MCPClient:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        """
+        Asynchronous context manager exit method to clean up the MCP client.
+
+        :param exc_type: The type of exception raised, if any.
+        :type exc_type: type[BaseException] | None
+        :param exc_value: The exception instance, if any.
+        :type exc_value: BaseException | None
+        :param traceback: The traceback of the exception, if any.
+        :type traceback: TracebackType | None
+        """
         await self.close()
 
     async def connect_to_servers(self) -> None:
+        """
+        Connect to the MCP servers and initialize sessions for each tool.
+        This method retrieves the list of tools from each server and binds them
+        to the model for use in the client.
+        """
         for _, server_params in SERVERS.items():
             sse_transport = await self.exit_stack.enter_async_context(
                 sse_client(server_params)
@@ -80,6 +109,18 @@ class MCPClient:
         self._model.bind_tools(self._all_tools)
 
     async def invoke(self, query: str, session_id: str) -> list[BaseMessage]:
+        """
+        Invoke the MCP client with a query and session ID, processing the query
+        through the model and tools, and returning the response messages.
+
+        :param query: The query to process.
+        :type query: str
+        :param session_id: The session ID for tracking the conversation.
+        :type session_id: str
+        :return: A list of messages containing the response from the model and
+            any tool calls.
+        :rtype: list[BaseMessage]
+        """
         messages = [
             SystemMessage(
                 content=self._system_prompt.format(tools=self._all_tools)
@@ -91,22 +132,10 @@ class MCPClient:
         new_messages.append(response)
 
         while len(response.tool_calls) > 0:
-            print(f"AI: {response.content[0]["text"]}")
             for tool_call in response.tool_calls:
-                print(
-                    f'Tool: {tool_call["name"]}, arguments {tool_call["args"]}'
-                )
                 result = await self.tool_sessions[tool_call["name"]].call_tool(
                     name=tool_call["name"], arguments=tool_call["args"]
                 )
-                print(f"Tool call completed: {tool_call['name']}")
-
-                print_result = (
-                    val.text
-                    if isinstance(val := result.content[0], TextContent)
-                    else val
-                )
-                print(f"Result: {print_result}")
 
                 new_messages.append(
                     ToolMessage(
@@ -128,38 +157,14 @@ class MCPClient:
             )
             new_messages.append(response)
 
-        print(f"AI: {response.content}")
-
         self.chat_history.add_messages(
             messages=new_messages, session_id=session_id
         )
 
         return new_messages
 
-    async def run(self) -> None:
-        print("\nMCP Client Running! (enter q to quit)")
-        session_id = uuid4().hex
-        while True:
-            try:
-                query = input("\nQuery: ").strip()
-                if query.lower() == "q":
-                    break
-
-                await self.invoke(
-                    query=query,
-                    session_id=session_id,
-                )
-            except Exception as e:
-                print(f"\nError: {str(e)}")
-
     async def close(self) -> None:
+        """
+        Close the MCP client and all sessions.
+        """
         await self.exit_stack.aclose()
-
-
-async def main() -> None:
-    async with MCPClient() as client:
-        await client.run()
-
-
-def start_client() -> None:
-    run(main())
