@@ -37,7 +37,7 @@ class AsyncWebAPI(BaseWebAPI):
         web API service when entering the context.
 
         :return: The instance of the AsyncWebAPI.
-        :rtype: AsyncWebAPI
+        :rtype: Self
         """
         super().__enter__()
         await self._mcp_client.__aenter__()
@@ -54,8 +54,11 @@ class AsyncWebAPI(BaseWebAPI):
         web API service when exiting the context.
 
         :param exc_type: The type of the exception raised, if any.
+        :type exc_type: type[BaseException] | None
         :param exc_value: The value of the exception raised, if any.
+        :type exc_value: BaseException | None
         :param traceback: The traceback of the exception raised, if any.
+        :type traceback: TracebackType | None
         """
         await self._mcp_client.__aexit__(exc_type, exc_value, traceback)
         super().__exit__(exc_type, exc_value, traceback)
@@ -99,7 +102,7 @@ class AsyncWebAPI(BaseWebAPI):
         returns the response from the MCP client.
 
         :param data: The request data.
-        :type data: dict[str, Any]
+        :type data: str
         :param params: The request parameters.
         :type params: dict[str, Any]
         :return: The response.

@@ -65,7 +65,7 @@ class WebApp:
         self,
         endpoint: str,
         endpoint_name: str,
-        handler: Callable[..., Any] | Callable[..., Awaitable[Any]],
+        handler: Callable[..., Awaitable[Any]],
         methods: list[str],
     ) -> None:
         """
@@ -78,7 +78,7 @@ class WebApp:
         :param endpoint_name: Name of the endpoint.
         :type endpoint_name: str
         :param handler: Handler callable for the endpoint.
-        :type handler: Callable[..., Any]
+        :type handler: Callable[..., Awaitable[Any]]
         :param methods: List of HTTP methods for the endpoint.
         :type methods: list[str]
         """

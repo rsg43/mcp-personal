@@ -15,11 +15,11 @@ class AnthropicModel(BaseModel):
     """
 
     def __init__(self) -> None:
-        self._model = ChatAnthropic(
-            model="claude-3-haiku-20240307",
+        self._model = ChatAnthropic(  # type: ignore[call-arg]
+            model_name="claude-3-haiku-20240307",
             temperature=0.3,
-            max_tokens=1024,
+            max_tokens_to_sample=1024,
             timeout=60,
             max_retries=3,
-            api_key=environ.get("ANTHROPIC_API_KEY"),
+            api_key=environ.get("ANTHROPIC_API_KEY"),  # type: ignore[arg-type]
         )

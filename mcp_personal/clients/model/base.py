@@ -28,6 +28,8 @@ class BaseModel:
 
         :param messages: List of messages to send to the model.
         :type messages: list[BaseMessage]
+        :raises TypeError: If the model's response is not an instance of
+            AIMessage.
         :return: The model's response message.
         :rtype: AIMessage
         """
@@ -46,14 +48,23 @@ class BaseModel:
 
         :param prompt: The prompt to send to the model.
         :type prompt: str
+        :raises TypeError: If the model's response is not a string.
         :return: The model's response.
         :rtype: str
         """
         if self._tools_bound and self._tool_model:
-            return self._tool_model.invoke(
+            result = self._tool_model.invoke(
                 input=[HumanMessage(content=prompt)]
             ).content
-        return self._model.invoke(input=[HumanMessage(content=prompt)]).content
+        else:
+            result = self._model.invoke(
+                input=[HumanMessage(content=prompt)]
+            ).content
+
+        if not isinstance(result, str):
+            raise TypeError(f"Expected str, got {type(result).__name__}")
+
+        return result
 
     def bind_tools(self, tools: list[dict[str, Any]]) -> None:
         """

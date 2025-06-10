@@ -139,7 +139,7 @@ class MCPClient:
 
                 new_messages.append(
                     ToolMessage(
-                        content=result.content,
+                        content=result.content,  # type: ignore[arg-type]
                         artifact={
                             "call": tool_call,
                             "result": (

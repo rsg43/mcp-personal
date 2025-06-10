@@ -18,6 +18,11 @@ class BaseWebAPI(ABC):
     """
     Base Web API service, which contains the run method to start the web API
     and requires implementations to add endpoint handlers to the web app.
+
+    :param host: The host on which the web API will run.
+    :type host: str
+    :param port: The port on which the web API will run.
+    :type port: int
     """
 
     def __init__(self, host: str, port: int) -> None:
