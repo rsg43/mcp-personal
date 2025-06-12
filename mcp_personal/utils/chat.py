@@ -31,7 +31,7 @@ def main() -> None:
         try:
             response = requests.post(
                 url,
-                timeout=10,
+                timeout=60,
                 json={"query": query, "session_id": session_id},
             )
         except requests.exceptions.RequestException as e:

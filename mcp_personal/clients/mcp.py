@@ -8,6 +8,7 @@ from contextlib import AsyncExitStack
 
 from typing_extensions import Self
 from mcp import ClientSession
+from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.types import TextContent
 from langchain_core.messages import (
@@ -27,8 +28,15 @@ SYSTEM_PROMPT_TEMPLATE = (
     "Here are the tools you can use: \n\n{tools}\n\n"
 )
 
-SERVERS = {
+SERVERS: dict[str, str | StdioServerParameters] = {
     "maths": "http://localhost:54321/sse",
+    "notion": StdioServerParameters(
+        command="docker",
+        args=["run", "--rm", "-i", "-e", "OPENAPI_MCP_HEADERS", "mcp/notion"],
+        env={
+            "OPENAPI_MCP_HEADERS": '{"Authorization":"Bearer ntn_****","Notion-Version":"2022-06-28"}'
+        },
+    ),
 }
 
 
@@ -83,12 +91,20 @@ class MCPClient:
         to the model for use in the client.
         """
         for _, server_params in SERVERS.items():
-            sse_transport = await self.exit_stack.enter_async_context(
-                sse_client(server_params)
-            )
-            session = await self.exit_stack.enter_async_context(
-                ClientSession(*sse_transport)
-            )
+            if isinstance(server_params, str):
+                sse_transport = await self.exit_stack.enter_async_context(
+                    sse_client(server_params)
+                )
+                session = await self.exit_stack.enter_async_context(
+                    ClientSession(*sse_transport)
+                )
+            else:
+                stdio_transport = await self.exit_stack.enter_async_context(
+                    stdio_client(server_params)
+                )
+                session = await self.exit_stack.enter_async_context(
+                    ClientSession(*stdio_transport)
+                )
 
             await session.initialize()
             self.sessions.append(session)

@@ -16,7 +16,7 @@ def main() -> None:
         "session_id": uuid4().hex,
     }
     try:
-        response = requests.post(url, timeout=10, json=data)
+        response = requests.post(url, timeout=60, json=data)
         if response.status_code == 200:
             print("Response from API:")
             print(response.text)
