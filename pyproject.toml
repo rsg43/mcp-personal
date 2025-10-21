@@ -19,7 +19,7 @@ dependencies = [
   "langchain-community==0.3.24",
   "langchain-anthropic==0.3.13",
   "mcp==1.9.0",
-  "uv==0.7.6",
+  "uv==0.9.5",
   "quart==0.20.0",
   "quart-cors==0.8.0",
 ]
